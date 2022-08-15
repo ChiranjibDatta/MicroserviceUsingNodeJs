@@ -9,6 +9,40 @@ app.use(bodyParser.json());
 
 const posts={};
 
+const handleEvents=(type,data)=>{
+    if(type==='postCreated'){
+        const {id,title,status}=data;
+        posts[id]={id,title,status,comments:[]}
+    }
+
+    if(type==='postUpdated'){
+        const {id,title,status}=data;
+        for(let i in posts){
+            if(posts[i].id==id){
+                posts[i].status=status
+            }
+        }
+        console.log(posts);
+    }
+    if(type=='commentCreated'){
+        const {id,content,postId,status}=data;
+        const post=posts[postId];
+        post.comments.push({id,content,status});
+    }
+    if(type=='commentUpdated'){
+        const {id,postId,status}=data;
+        console.log("I am here: "+status)
+        const comments = posts[postId].comments;
+        for(let i=0;i<comments.length;i++){
+            if(comments[i].id === id){
+                comments[i].status=status
+            }
+        }
+        posts[postId].comments=comments;
+        console.log(JSON.stringify(posts));
+    }
+}
+
 /**
     <PRE>
     post===
@@ -45,39 +79,15 @@ app.get('/posts',(req,res)=>{
 app.post('/events',(req,res)=>{
     const {type,data}=req.body;
     console.info(`${type} : ${JSON.stringify(data)}`)
-    if(type==='postCreated'){
-        const {id,title,status}=data;
-        posts[id]={id,title,status,comments:[]}
-    }
-
-    if(type==='postUpdated'){
-        const {id,title,status}=data;
-        for(let i in posts){
-            if(posts[i].id==id){
-                posts[i].status=status
-            }
-        }
-    }
-    if(type=='commentCreated'){
-        const {id,content,postId,status}=data;
-        const post=posts[postId];
-        post.comments.push({id,content,status});
-    }
-    if(type=='commentUpdated'){
-        const {id,postId,status}=data;
-        console.log("I am here: "+status)
-        const comments = posts[postId].comments;
-        for(let i=0;i<comments.length;i++){
-            if(comments[i].id === id){
-                comments[i].status=status
-            }
-        }
-        posts[postId].comments=comments;
-        console.log(JSON.stringify(posts));
-    }
+    handleEvents(type,data);
     res.send({})
 })
 
-app.listen(4002,()=>{
+app.listen(4002,async ()=>{
     console.info('Listening to 4002');
+    let res=await axios.get('http://localhost:4005/events');
+    for(let event of res.data){
+        console.log('Processing events');
+        handleEvents(event.type,event.data)
+    }
 });

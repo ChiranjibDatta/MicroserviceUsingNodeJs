@@ -32,17 +32,17 @@ app.post('/posts',async (req,res)=>{
 })
 
 app.post('/events',async(req,res)=>{
-    console.info(`Received event ${req.body.type}`);
+    console.info(`Received event ${req.body.type} Status is ${req.body.data.status} `);
     const { type, data } = req.body;
     if (type === "postModerated") {
         const { id, title,status } = data;
-        posts[id]={id,title};
+        posts[id]={id,title,status};
         await axios.post("http://localhost:4005/events", {
           type: "postUpdated",
           data: {
             id,
             title,
-            status
+            status:status
           },
         });
     }
